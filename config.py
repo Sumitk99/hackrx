@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 # --- Load Environment Variables ---
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Validate required environment variables
 if not OPENAI_API_KEY:

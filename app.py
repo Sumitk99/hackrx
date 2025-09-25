@@ -8,7 +8,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS 
 from langchain_openai import ChatOpenAI
 
-
+import tiktoken
 from schemas import HackathonInput, HackathonOutput
 from document_processor import build_knowledge_base_from_urls
 from rag_chain import create_rag_chain
@@ -27,9 +27,12 @@ app = FastAPI(
 # --- Caching for Document Processing ---
 cached_build_knowledge_base = lru_cache(maxsize=10)(build_knowledge_base_from_urls)
 
-def estimate_tokens(text):
-    """Estimate token count for text (conservative approximation: 3 chars per token)"""
-    return max(1, len(text) // 3)
+def estimate_tokens(text, model):
+    encoding = tiktoken.encoding_for_model(model)
+    # Encode the text into tokens
+    tokens = encoding.encode(text)
+    print(f"Estimated tokens for text {len(text)}: {len(tokens)}")
+    return len(tokens)
 
 def create_vectorstore_with_batched_embeddings(chunked_documents, embeddings_model):
     """Create FAISS vectorstore with token-based batched embeddings to handle large documents"""
@@ -40,7 +43,7 @@ def create_vectorstore_with_batched_embeddings(chunked_documents, embeddings_mod
     current_tokens = 0
     
     for doc in chunked_documents:
-        doc_tokens = estimate_tokens(doc.page_content)
+        doc_tokens = estimate_tokens(doc.page_content, embeddings_model.model)
         
         # If adding this document would exceed the token limit, start a new batch
         if current_tokens + doc_tokens > MAX_TOKENS_PER_BATCH and current_batch:
